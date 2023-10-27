@@ -1,0 +1,58 @@
+from exchangelib import Credentials, Account, DELEGATE, Message, HTMLBody
+import pandas as pd
+
+# Outlook credentials
+username = 'your_email@example.com'
+password = 'your_password'
+
+# Connect to Outlook account
+credentials = Credentials(username, password)
+account = Account(username, credentials=credentials, autodiscover=True, access_type=DELEGATE)
+
+# Define specific subject and sender for sorting
+subject_keyword = 'Specific Subject'
+sender_email = 'sender@example.com'
+
+# Initialize data for spreadsheet
+data = {'Names': [], 'Feed name': [], 'Revision number': [], 'Body': []}
+
+# Get emails matching the specified criteria
+for item in account.inbox.filter(subject=subject_keyword, sender=sender_email):
+    names = ''
+    feed_name = ''
+    revision_number = ''
+    body = ''
+
+    # Extract information from the email body
+    for part in item.body.parts:
+        if isinstance(part, HTMLBody):
+            body = part.content
+
+    # Extract specific keywords from the email body
+    for keyword in ['Names:', 'Feed name:', 'Revision number:']:
+        start_index = body.find(keyword)
+        if start_index != -1:
+            start_index += len(keyword)
+            end_index = body.find('<', start_index)
+            value = body[start_index:end_index].strip()
+            if keyword == 'Names:':
+                names = value
+            elif keyword == 'Feed name:':
+                feed_name = value
+            elif keyword == 'Revision number:':
+                revision_number = value
+
+    # Add data to the dictionary
+    data['Names'].append(names)
+    data['Feed name'].append(feed_name)
+    data['Revision number'].append(revision_number)
+    data['Body'].append(body)
+
+# Create a DataFrame from the extracted data
+df = pd.DataFrame(data)
+
+# Write the data to an Excel file
+excel_file_path = 'output.xlsx'
+df.to_excel(excel_file_path, index=False)
+
+print(f'Data has been extracted and saved to {excel_file_path}')
