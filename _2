@@ -1,0 +1,49 @@
+from exchangelib import Credentials, Account, DELEGATE
+import pandas as pd
+
+# Outlookの認証情報
+username = 'your_email@example.com'
+password = 'your_password'
+
+# Outlookアカウントに接続
+credentials = Credentials(username, password)
+account = Account(username, credentials=credentials, autodiscover=True, access_type=DELEGATE)
+
+# 検索するメールの題名と送信元アカウント
+subject_keyword = 'Specific Subject'  # 検索するメールの題名
+sender_email = 'sender@example.com'  # 送信元のメールアドレス
+
+# データフレームを初期化
+data = {'Names': [], 'Feed name': [], 'Revision number': []}
+
+# 指定された題名と送信元アカウントのメールを取得
+for item in account.inbox.filter(subject=subject_keyword, sender=sender_email):
+    names = ''
+    feed_name = ''
+    revision_number = ''
+
+    # メールの本文を取得
+    body = item.text_body
+
+    # メール本文からキーワードを抽出
+    for line in body.splitlines():
+        if 'Names:' in line:
+            names = line.replace('Names:', '').strip()
+        elif 'Feed name:' in line:
+            feed_name = line.replace('Feed name:', '').strip()
+        elif 'revision number:' in line:
+            revision_number = line.replace('revision number:', '').strip()
+
+    # データフレームにデータを追加
+    data['Names'].append(names)
+    data['Feed name'].append(feed_name)
+    data['Revision number'].append(revision_number)
+
+# データフレームを作成
+df = pd.DataFrame(data)
+
+# データフレームをExcelファイルとして出力
+excel_file_path = 'output.xlsx'
+df.to_excel(excel_file_path, index=False)
+
+print(f'データが抽出され、{excel_file_path}に保存されました。')
